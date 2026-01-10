@@ -3,12 +3,17 @@ from fastapi import FastAPI
 from app.core.config import settings
 from app.routers import fundamentals
 # Import other routers like: from app.routers import rag, agents
+from app.core.exceptions import AIModelError, ai_model_exception_handler, generic_exception_handler
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     description="Professional AI Backend for specialized role-based learning."
 )
+
+# Exception Handlers
+app.add_exception_handler(AIModelError, ai_model_exception_handler)
+app.add_exception_handler(Exception, generic_exception_handler)
 
 # register routers
 app.include_router(fundamentals.router, prefix="/fundamentals", tags=["Module 1: Fundamentals"])
@@ -20,4 +25,4 @@ def root():
 
 if __name__ == "__main__":
     # This allows you to run python main.py
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("main:app", host="localhost", port=8000, reload=True)

@@ -1,8 +1,7 @@
 import uvicorn
 from fastapi import FastAPI
 from app.core.config import settings
-from app.routers import fundamentals
-# Import other routers like: from app.routers import rag, agents
+from app.routers import fundamentals, rag
 from app.core.exceptions import AIModelError, ai_model_exception_handler, generic_exception_handler
 
 app = FastAPI(
@@ -17,7 +16,7 @@ app.add_exception_handler(Exception, generic_exception_handler)
 
 # register routers
 app.include_router(fundamentals.router, prefix="/fundamentals", tags=["Module 1: Fundamentals"])
-# app.include_router(rag.router, prefix="/rag", tags=["Module 2: RAG"])
+app.include_router(rag.router)
 
 @app.get("/")
 def root():

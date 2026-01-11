@@ -1,6 +1,21 @@
-﻿venv/
+﻿# Python
 __pycache__/
-.env
 *.pyc
-.DS_Store
+*.pyo
+*.pyd
+
+# Environment
+venv/
+.env
+
+# Data / RAG
+data/chroma_db/
+data/source_documents/
+
+# IDE
 .vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -42,38 +42,60 @@ A Python monorepo for learning AI roles and building AI systems. It connects spe
 1.  **Install**
     ```powershell
     pip install -r requirements.txt
-    ```
+# AI Integration Specialist Repo
 
-2.  **Config**
-    Create a `.env` file in the root:
-    ```ini
-    GEMINI_API_KEY="..."
-    ```
+A professional AI backend implementing a modular **Retrieval-Augmented Generation (RAG)** pipeline with a **Unified TUI** and **REST API**.
 
-## Usage
+## 🚀 Key Features
 
-### 1. HTTP API
-Runs the server and Swagger UI.
+*   **Multi-Model Architecture**: Seamlessly switch between **Gemini**, **Ollama**, and **HuggingFace** models.
+*   **Basic RAG Pipeline**: Ingest documentation and query it using your preferred LLM.
+*   **Unified TUI**: Interactive terminal menu for all operations (Chat, Ingest, Config).
+*   **REST API**: Full programmatic access via FastAPI (`/rag/query`, `/rag/ingest`).
+*   **Provider Isolation**: Separate vector collections for each embedding provider to prevent conflicts.
 
-```powershell
+## 🛠️ Quick Start
+
+### 1. Setup
+```bash
+# Create virtual environment
+python -m venv venv
+.\venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### 2. Configuration
+Create a `.env` file:
+```ini
+GEMINI_API_KEY=your_key_here
+OLLAMA_BASE_URL=http://localhost:11434
+# See config.py for full list of options
+```
+
+### 3. Run the TUI (Interactive Mode)
+The recommended way to use the application:
+```bash
+python cli.py start
+```
+
+### 4. Run the API (Server Mode)
+```bash
 python main.py
 ```
 *   Docs: `http://localhost:8000/docs`
+*   RAG API: `http://localhost:8000/rag`
 
-### 2. CLI
-Runs specific modules directly from the terminal.
+## 📚 Knowledge Base (RAG)
+Place your `.txt` documents in `data/source_documents`.
+*   **Ingest**: Use the TUI or API to index them.
+*   **Embeddings**: Supports Google (`gemini-embedding-001`), Ollama (`embeddinggemma`), and HuggingFace (`all-MiniLM-L6-v2`).
 
-```powershell
-# Check status
-python cli.py hello
+## 🏗️ Architecture
+*   **Core**: FastAPI, Pydantic
+*   **Vector Store**: ChromaDB (Persistent)
+*   **Orchestration**: Custom `RAGEngine` & `PromptEngine`
+*   **Interface**: `Typer` & `Questionary` (TUI)
 
-# Send query
-python cli.py ask "Explain recursion"
-```
-
-## Structure
-
-*   `app/services/`: Pure Python logic (AI Chains).
-*   `app/routers/`: FastAPI endpoints.
-*   `main.py`: Web server entry point.
-*   `cli.py`: Terminal entry point.
+**Note**: This implements a *Basic RAG* architecture (simple chunking, direct retrieval). Advanced techniques (re-ranking, hybrid search) are not yet implemented.

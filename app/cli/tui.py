@@ -71,12 +71,57 @@ async def rag_menu():
                 "Chat with Documents",
                 "Ingest Documents",
                 "View Status",
+                "⚙️ Configure Settings",
                 "Back to Main Menu"
             ]
         ).ask_async()
 
         if choice == "Back to Main Menu":
             break
+            
+        elif choice == "⚙️ Configure Settings":
+             while True:
+                # Sub-menu for RAG Configuration
+                current_urn = settings.EMBEDDING_PROVIDER_URN
+                slot_name = "Model 1" if RAG_MODEL_SLOT == 1 else "Model 2"
+                
+                sub_choice = await questionary.select(
+                    f"RAG Settings [Provider: {current_urn}] [Inference: {slot_name}]",
+                    choices=[
+                        "Switch Embedding Provider",
+                        "Change Inference Model",
+                        "Back to RAG Menu"
+                    ]
+                ).ask_async()
+                
+                if sub_choice == "Back to RAG Menu":
+                    break
+                    
+                elif sub_choice == "Change Inference Model":
+                    selection = await questionary.select(
+                        "Select Model for RAG Answers:",
+                        choices=["Model 1 (Primary)", "Model 2 (Secondary)"]
+                    ).ask_async()
+                    RAG_MODEL_SLOT = 1 if "Model 1" in selection else 2
+                    console.print(f"[green]RAG Inference set to use Model {RAG_MODEL_SLOT}[/green]")
+
+                elif sub_choice == "Switch Embedding Provider":
+                    # Define options from config
+                    options = [
+                        settings.EMBEDDING_MODEL_1,
+                        settings.EMBEDDING_MODEL_2,
+                        settings.EMBEDDING_MODEL_3
+                    ]
+                    # Filter out empty strings if any are unset
+                    options = [opt for opt in options if opt]
+                    
+                    selection = await questionary.select("Select Provider:", choices=options).ask_async()
+                    
+                    if selection != current_urn:
+                        settings.EMBEDDING_PROVIDER_URN = selection
+                        # Reset factory cache to force reload next time a provider is requested
+                        EmbeddingFactory._instance = None
+                        console.print(f"[green]Switched to {selection}. Active collection will change automatically.[/green]")
 
         elif choice == "View Status":
             # Force reload of provider to ensure we are looking at the right collection
@@ -152,50 +197,6 @@ async def rag_menu():
                         console.print(f"[red]Error: {e}[/red]")
 
 
-async def config_menu():
-    global RAG_MODEL_SLOT
-    while True:
-        current_urn = settings.EMBEDDING_PROVIDER_URN
-        slot_name = "Model 1" if RAG_MODEL_SLOT == 1 else "Model 2"
-        
-        choice = await questionary.select(
-            "⚙️ Configuration",
-            choices=[
-                f"Switch Embedding Provider (Current: {current_urn})",
-                f"Change RAG Inference Model (Current: {slot_name})",
-                "Back to Main Menu"
-            ]
-        ).ask_async()
-        
-        if choice == "Back to Main Menu":
-            break
-
-        elif choice.startswith("Change RAG Inference Model"):
-            selection = await questionary.select(
-                "Select Model for RAG Answers:",
-                choices=["Model 1 (Primary)", "Model 2 (Secondary)"]
-            ).ask_async()
-            RAG_MODEL_SLOT = 1 if "Model 1" in selection else 2
-            console.print(f"[green]RAG Inference set to use Model {RAG_MODEL_SLOT}[/green]")
-        
-        elif choice.startswith("Switch Embedding"):
-            # Define options from config
-            options = [
-                settings.EMBEDDING_MODEL_1,
-                settings.EMBEDDING_MODEL_2,
-                settings.EMBEDDING_MODEL_3
-            ]
-            # Filter out empty strings if any are unset
-            options = [opt for opt in options if opt]
-            
-            selection = await questionary.select("Select Provider:", choices=options).ask_async()
-            
-            if selection != current_urn:
-                settings.EMBEDDING_PROVIDER_URN = selection
-                # Reset factory cache to force reload next time a provider is requested
-                EmbeddingFactory._instance = None
-                console.print(f"[green]Switched to {selection}. Active collection will change automatically.[/green]")
-
 async def main_loop():
     console.print(Panel(f"[bold blue]Welcome to {settings.PROJECT_NAME} TUI[/bold blue]", expand=False))
     
@@ -206,7 +207,6 @@ async def main_loop():
                 choices=[
                     "🤖 Direct AI Interaction",
                     "📚 Knowledge Base (RAG)",
-                    "⚙️ Configuration",
                     "❌ Exit"
                 ]
             ).ask_async()
@@ -219,8 +219,6 @@ async def main_loop():
                 await direct_ai_menu()
             elif choice == "📚 Knowledge Base (RAG)":
                 await rag_menu()
-            elif choice == "⚙️ Configuration":
-                await config_menu()
                 
         except Exception as e:
             console.print(f"[red]Application Error: {e}[/red]")

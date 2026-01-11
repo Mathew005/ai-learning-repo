@@ -79,6 +79,7 @@ The recommended way to use the application:
 ```bash
 python cli.py start
 ```
+*   **Knowledge Base**: Access `Ingest`, `Chat`, and `Configure Settings` (switch providers/models) all from the RAG menu.
 
 ### 4. Run the API (Server Mode)
 ```bash

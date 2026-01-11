@@ -10,8 +10,8 @@ A Python monorepo for learning AI roles and building AI systems. It connects spe
     - [x] LLM APIs Integration (OpenAI, Claude, Gemini)
 
 - [ ] **2. RAG Systems**
-    - [ ] Vector Databases (Pinecone, Weaviate, Chroma)
-    - [ ] Embeddings & Semantic Search
+    - [x] Vector Databases (Pinecone, Weaviate, Chroma)
+    - [x] Embeddings & Semantic Search
     - [ ] LangChain Mastery & Memory Management
     - [ ] Advanced RAG (Query Transformation, Reranking)
 

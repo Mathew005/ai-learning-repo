@@ -8,3 +8,8 @@ rich>=13.7.0
 chromadb
 questionary
 sentence-transformers
+langchain>=0.1.0
+langgraph>=0.0.10
+langchain-google-genai
+langchain-ollama
+langchain-community

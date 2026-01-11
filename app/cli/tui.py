@@ -197,6 +197,50 @@ async def rag_menu():
                         console.print(f"[red]Error: {e}[/red]")
 
 
+from app.langchain_lab.registry import ExperimentRegistry
+
+async def langchain_lab_menu():
+    # Scan for new experiments every time we enter the lab
+    ExperimentRegistry.scan()
+    
+    while True:
+        categories = ExperimentRegistry.get_categories()
+        
+        # Add Exit option
+        options = categories + ["Back to Main Menu"]
+        
+        category = await questionary.select(
+            "🦜 LangChain Lab",
+            choices=options
+        ).ask_async()
+        
+        if category == "Back to Main Menu":
+            break
+            
+        # Select Experiment in Category
+        experiments = ExperimentRegistry.get_experiments_in_category(category)
+        exp_choices = [questionary.Choice(title=e.name, value=e) for e in experiments]
+        exp_choices.append(questionary.Choice(title="Back", value="back"))
+        
+        selected_exp_cls = await questionary.select(
+            f"Select Experiment ({category})",
+            choices=exp_choices
+        ).ask_async()
+        
+        if selected_exp_cls == "back":
+            continue
+            
+        # Run Experiment
+        exp_instance = selected_exp_cls()
+        console.print(Panel(f"Running: [bold]{exp_instance.name}[/bold]", style="bold magenta"))
+        
+        try:
+            await exp_instance.run()
+        except Exception as e:
+            console.print(f"[bold red]Experiment Failed:[/bold red] {e}")
+            
+        console.input("\n[dim]Press Enter to continue...[/dim]")
+
 async def main_loop():
     console.print(Panel(f"[bold blue]Welcome to {settings.PROJECT_NAME} TUI[/bold blue]", expand=False))
     
@@ -207,6 +251,7 @@ async def main_loop():
                 choices=[
                     "🤖 Direct AI Interaction",
                     "📚 Knowledge Base (RAG)",
+                    "🦜 LangChain Lab",
                     "❌ Exit"
                 ]
             ).ask_async()
@@ -219,6 +264,8 @@ async def main_loop():
                 await direct_ai_menu()
             elif choice == "📚 Knowledge Base (RAG)":
                 await rag_menu()
+            elif choice == "🦜 LangChain Lab":
+                await langchain_lab_menu()
                 
         except Exception as e:
             console.print(f"[red]Application Error: {e}[/red]")

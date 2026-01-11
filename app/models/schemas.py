@@ -8,6 +8,7 @@ class PromptRequest(BaseModel):
     system_role: str = "You are a helpful assistant."
     user_query: str
     temperature: float = 0.7
+    model_slot: int = 1  # Default to Model 1
 
 # Basic Output
 class AIResponse(BaseModel):

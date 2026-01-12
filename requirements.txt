@@ -13,3 +13,4 @@ langgraph>=0.0.10
 langchain-google-genai
 langchain-ollama
 langchain-community
+PyPDF2

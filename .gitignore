@@ -11,6 +11,9 @@ venv/
 # Data / RAG
 data/chroma_db/
 data/source_documents/
+data/qa_documents/
+data/model_config.json
+
 
 # IDE
 .vscode/
@@ -19,3 +22,5 @@ data/source_documents/
 # OS
 .DS_Store
 Thumbs.db
+
+project

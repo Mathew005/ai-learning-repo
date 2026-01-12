@@ -4,6 +4,7 @@ from app.models.schemas import PromptRequest, AIResponse
 from app.core.config import settings
 from app.core.exceptions import AIModelError
 from app.services.llm_providers import ProviderFactory
+from app.services.model_registry import ModelRegistry
 
 # --- Core Execution Helper ---
 
@@ -75,14 +76,23 @@ async def _run_synthesis_step(request: PromptRequest, analysis_content: str, mod
 
 # --- Public API Functions ---
 
+def _get_model_urn(slot: int) -> str:
+    """Get model URN from registry for a slot."""
+    registry = ModelRegistry.instance()
+    urn = registry.get_active_llm(slot)
+    if not urn:
+        raise AIModelError(f"No model configured for slot {slot}. Run model discovery first.")
+    return urn
+
+
 async def call_model_1(request: PromptRequest) -> AIResponse:
     """Call Configured Model 1"""
-    return await _execute_model_call(settings.MODEL_1, request)
+    return await _execute_model_call(_get_model_urn(1), request)
 
 
 async def call_model_2(request: PromptRequest) -> AIResponse:
     """Call Configured Model 2"""
-    return await _execute_model_call(settings.MODEL_2, request)
+    return await _execute_model_call(_get_model_urn(2), request)
 
 
 async def call_specific_model_by_slot(slot: int, request: PromptRequest) -> AIResponse:
@@ -113,9 +123,9 @@ async def generate_chain_of_thought_response(request: PromptRequest) -> AIRespon
     Synthesis -> Model 1
     """
     try:
-        # Define models for each step (Configurable via settings)
-        analysis_urn = settings.MODEL_2
-        synthesis_urn = settings.MODEL_1
+        # Get models for each step from registry
+        analysis_urn = _get_model_urn(2)
+        synthesis_urn = _get_model_urn(1)
 
         # Step 1: Analysis
         analysis_response = await _run_analysis_step(request, analysis_urn)
@@ -137,3 +147,4 @@ async def generate_chain_of_thought_response(request: PromptRequest) -> AIRespon
             raise
     except Exception as e:
             raise AIModelError("Chain of Thought failed", {"error": str(e)})
+

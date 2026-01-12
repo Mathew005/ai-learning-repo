@@ -108,20 +108,30 @@ class HuggingFaceEmbeddingProvider(EmbeddingProvider):
 # --- Factory ---
 class EmbeddingFactory:
     _instance: Optional[EmbeddingProvider] = None
+    _current_urn: Optional[str] = None
 
     @classmethod
     def get_provider(cls) -> EmbeddingProvider:
-        if cls._instance:
+        # Import here to avoid circular imports
+        from app.services.model_registry import ModelRegistry
+        
+        registry = ModelRegistry.instance()
+        urn = registry.get_active_embedding()
+        
+        # Return cached instance if URN hasn't changed
+        if cls._instance and cls._current_urn == urn:
             return cls._instance
-
-        urn = settings.EMBEDDING_PROVIDER_URN
+        
+        if not urn:
+            raise ValueError("No embedding model configured. Run model discovery first.")
+        
         if "/" not in urn:
             raise ValueError(f"Invalid embedding URN format: {urn}. Expected 'provider/model-name'.")
 
         provider_type, model_name = urn.split("/", 1)
         provider_type = provider_type.lower()
         
-        if provider_type == "google":
+        if provider_type == "gemini" or provider_type == "google":
             cls._instance = GoogleEmbeddingProvider(
                 api_key=settings.GEMINI_API_KEY,
                 model_name=model_name
@@ -137,5 +147,12 @@ class EmbeddingFactory:
             )
         else:
             raise ValueError(f"Unknown embedding provider type: {provider_type} (URN: {urn})")
-            
+        
+        cls._current_urn = urn
         return cls._instance
+    
+    @classmethod
+    def reset(cls):
+        """Reset the cached instance (call when embedding selection changes)."""
+        cls._instance = None
+        cls._current_urn = None

@@ -16,10 +16,11 @@ import chromadb
 from PyPDF2 import PdfReader
 
 from app.core.config import settings
-from app.services.embedding_provider import EmbeddingFactory
-from app.services import prompt_engine
+from app.services.ai_providers import AIServiceFactory, parse_model_urn
+from app.services.model_registry import ModelRegistry
 from app.models.schemas import PromptRequest
 from app.utils.text_splitter import RecursiveCharacterTextSplitter
+from app.services import prompt_engine
 
 
 # --- Data Classes ---
@@ -79,9 +80,16 @@ class QAEngine:
     def get_collection(cls):
         """Get the Q&A collection (separate from Basic RAG)."""
         client = cls.get_client()
-        provider = EmbeddingFactory.get_provider()
+        
+        registry = ModelRegistry.instance()
+        urn = registry.get_active_embedding()
+        if not urn:
+            # Fallback or error?
+            return client.get_or_create_collection(name=f"{QA_COLLECTION_NAME}_default")
+
+        provider_name, _ = parse_model_urn(urn)
         # Include provider name to avoid embedding dimension conflicts
-        collection_name = f"{QA_COLLECTION_NAME}_{provider.provider_name}"
+        collection_name = f"{QA_COLLECTION_NAME}_{provider_name}"
         return client.get_or_create_collection(name=collection_name)
     
     @classmethod
@@ -170,7 +178,14 @@ class QAEngine:
         Ingest specified PDF files from source directory.
         Returns: {filename: "Success" | "Failed: reason"}
         """
-        provider = EmbeddingFactory.get_provider()
+        registry = ModelRegistry.instance()
+        urn = registry.get_active_embedding()
+        if not urn:
+            return {f: "Failed: No embedding model set" for f in filenames}
+            
+        provider_name, model_name = parse_model_urn(urn)
+        service = AIServiceFactory.get_service(provider_name)
+        
         collection = cls.get_collection()
         results = {}
         
@@ -186,8 +201,8 @@ class QAEngine:
                 
                 # Generate embeddings
                 texts = [c.text for c in chunks]
-                print(f"Generating embeddings for {len(texts)} chunks from {filename}...")
-                embeddings = provider.embed_batch(texts)
+                print(f"Generating embeddings for {len(texts)} chunks from {filename} using {model_name}...")
+                embeddings = service.embed_batch(texts, model_name)
                 
                 # Prepare data
                 ids = [str(uuid.uuid4()) for _ in chunks]
@@ -215,10 +230,16 @@ class QAEngine:
         Search for similar documents and return with full metadata.
         Returns: [{"content": str, "metadata": dict}, ...]
         """
-        provider = EmbeddingFactory.get_provider()
+        registry = ModelRegistry.instance()
+        urn = registry.get_active_embedding()
+        if not urn:
+            return []
+            
+        provider_name, model_name = parse_model_urn(urn)
+        service = AIServiceFactory.get_service(provider_name)
         collection = cls.get_collection()
         
-        query_embedding = provider.embed_text(query)
+        query_embedding = service.embed_text(query, model_name)
         
         results = collection.query(
             query_embeddings=[query_embedding],

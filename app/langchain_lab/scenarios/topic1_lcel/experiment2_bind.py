@@ -4,9 +4,11 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_ollama import ChatOllama
 from rich.panel import Panel
+from app.langchain_lab.registry import register_experiment
 from app.langchain_lab.core import LabExperiment, console
 from app.langchain_lab.utils import visualize_step
 
+@register_experiment
 class Experiment1_2_Bind(LabExperiment):
     name: str = "1.2 Runtime Configuration (.bind)"
     category: str = "Topic 1: LCEL"

@@ -3,22 +3,14 @@ from typing import Optional, Dict, Any, Tuple
 from app.models.schemas import PromptRequest, AIResponse
 from app.core.config import settings
 from app.core.exceptions import AIModelError
-from app.services.llm_providers import ProviderFactory
+from app.services.ai_providers import AIServiceFactory, parse_model_urn
 from app.services.model_registry import ModelRegistry
 
 # --- Core Execution Helper ---
 
-def _parse_model_urn(model_urn: str) -> Tuple[str, str]:
-    """
-    Parses a standardized model identifier (URN).
-    Format: "provider/model_name"
-    Example: "gemini/gemini-1.5-flash" -> ("gemini", "gemini-1.5-flash")
-    """
-    if "/" not in model_urn:
-        raise AIModelError(f"Invalid model identifier format: '{model_urn}'. Expected 'provider/model-name'.")
-    
-    provider_name, model_alias = model_urn.split("/", 1)
-    return provider_name, model_alias
+# --- Core Execution Helper ---
+
+# helper parse method replaced by shared utility
 
 async def _execute_model_call(model_urn: str, request: PromptRequest) -> AIResponse:
     """
@@ -27,10 +19,10 @@ async def _execute_model_call(model_urn: str, request: PromptRequest) -> AIRespo
     """
     try:
         # 1. Parse the URN to find out WHO to call and WHAT model to ask for
-        provider_name, target_model_name = _parse_model_urn(model_urn)
+        provider_name, target_model_name = parse_model_urn(model_urn)
         
         # 2. Get the provider instance
-        provider = ProviderFactory.get_provider(provider_name)
+        provider = AIServiceFactory.get_service(provider_name)
         
         # 3. Execute
         return await provider.generate_content(request, target_model_name)

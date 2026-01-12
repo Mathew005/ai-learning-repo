@@ -9,7 +9,6 @@ from app.services import prompt_engine
 from app.services.rag_engine import RAGEngine
 from app.services.qa_engine import QAEngine
 from app.services.cocoindex_service import CocoIndexService
-from app.services.embedding_provider import EmbeddingFactory
 from app.services.vector_store import VectorStore
 from app.services.model_registry import ModelRegistry
 from app.models.schemas import PromptRequest
@@ -66,8 +65,11 @@ async def basic_rag_menu():
     """Submenu for Basic RAG (text documents)."""
     global RAG_MODEL_SLOT
     while True:
+        # try: removed, logic below handles errors via individual components or main loop
         slot_name = "Model 1" if RAG_MODEL_SLOT == 1 else "Model 2"
-        current_provider = settings.EMBEDDING_PROVIDER_URN.split('/')[0].capitalize()
+        registry = ModelRegistry.instance()
+        current_urn = registry.get_active_embedding() or "None"
+        current_provider = current_urn.split('/')[0].capitalize() if current_urn != "None" else "None"
         
         choice = await questionary.select(
             f"📄 Basic RAG [Provider: {current_provider} | Model: {slot_name}]",
@@ -83,7 +85,7 @@ async def basic_rag_menu():
             break
         
         elif choice == "View Status":
-            EmbeddingFactory._instance = None
+            # EmbeddingFactory._instance = None
             with console.status("[bold blue]Scanning status..."):
                 files = RAGEngine.get_source_files()
                 coll_name = VectorStore.get_collection().name
@@ -105,7 +107,7 @@ async def basic_rag_menu():
             console.input("[dim]Press Enter to continue...[/dim]")
         
         elif choice == "Ingest Documents":
-            EmbeddingFactory._instance = None
+            # EmbeddingFactory._instance = None
             with console.status("[bold blue]Scanning..."):
                 files = RAGEngine.get_source_files()
             
@@ -158,7 +160,9 @@ async def multisource_qa_menu():
     global QA_MODEL_SLOT
     while True:
         slot_name = "Model 1" if QA_MODEL_SLOT == 1 else "Model 2"
-        current_provider = settings.EMBEDDING_PROVIDER_URN.split('/')[0].capitalize()
+        registry = ModelRegistry.instance()
+        current_urn = registry.get_active_embedding() or "None"
+        current_provider = current_urn.split('/')[0].capitalize() if current_urn != "None" else "None"
         
         choice = await questionary.select(
             f"📑 Multi-Source Q&A [Provider: {current_provider} | Model: {slot_name}]",
@@ -174,7 +178,7 @@ async def multisource_qa_menu():
             break
         
         elif choice == "View Status":
-            EmbeddingFactory._instance = None
+            # EmbeddingFactory._instance = None
             with console.status("[bold blue]Scanning status..."):
                 files = QAEngine.get_source_files()
                 coll_name = QAEngine.get_collection().name
@@ -196,7 +200,7 @@ async def multisource_qa_menu():
             console.input("[dim]Press Enter to continue...[/dim]")
         
         elif choice == "Ingest PDFs":
-            EmbeddingFactory._instance = None
+            # EmbeddingFactory._instance = None
             with console.status("[bold blue]Scanning for PDFs..."):
                 files = QAEngine.get_source_files()
             
@@ -254,7 +258,9 @@ async def rag_menu():
     
     while True:
         slot_name = "Model 1" if RAG_MODEL_SLOT == 1 else "Model 2"
-        current_provider = settings.EMBEDDING_PROVIDER_URN.split('/')[0].capitalize()
+        registry = ModelRegistry.instance()
+        current_urn = registry.get_active_embedding() or "None"
+        current_provider = current_urn.split('/')[0].capitalize() if current_urn != "None" else "None"
         
         choice = await questionary.select(
             f"📚 Knowledge Base (RAG) [Active: {current_provider} | Inference: {slot_name}]",
@@ -294,7 +300,8 @@ async def rag_menu():
             
         elif choice == "⚙️ Configure Settings":
             while True:
-                current_urn = settings.EMBEDDING_PROVIDER_URN
+                registry = ModelRegistry.instance()
+                current_urn = registry.get_active_embedding() or "None"
                 rag_slot = "Model 1" if RAG_MODEL_SLOT == 1 else "Model 2"
                 qa_slot = "Model 1" if QA_MODEL_SLOT == 1 else "Model 2"
                 
@@ -328,18 +335,19 @@ async def rag_menu():
                     console.print(f"[green]Multi-Source Q&A set to use Model {QA_MODEL_SLOT}[/green]")
 
                 elif sub_choice == "Switch Embedding Provider":
-                    options = [
-                        settings.EMBEDDING_MODEL_1,
-                        settings.EMBEDDING_MODEL_2,
-                        settings.EMBEDDING_MODEL_3
-                    ]
-                    options = [opt for opt in options if opt]
+                    # Dynamic options from registry
+                    embeds = registry.get_available_embeddings()
+                    options = [e.urn for e in embeds]
                     
+                    if not options:
+                        console.print("[yellow]No embedding models found. Run discovery first.[/yellow]")
+                        continue
+
                     selection = await questionary.select("Select Provider:", choices=options).ask_async()
                     
                     if selection != current_urn:
-                        settings.EMBEDDING_PROVIDER_URN = selection
-                        EmbeddingFactory._instance = None
+                        registry.set_active_embedding(selection)
+                        # EmbeddingFactory._instance = None
                         console.print(f"[green]Switched to {selection}. Active collection will change automatically.[/green]")
 
 
@@ -473,7 +481,7 @@ async def model_settings_menu():
             selection = await questionary.select("Select Embedding Model:", choices=choices).ask_async()
             if selection:
                 registry.set_active_embedding(selection)
-                EmbeddingFactory.reset()  # Reset cache to use new embedding
+                # EmbeddingFactory.reset()  # Reset cache to use new embedding
                 console.print(f"[green]✅ Embedding set to {selection}[/green]")
 
 

@@ -11,17 +11,7 @@ from typing import List, Dict, Optional, Any
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from pathlib import Path
-
-
-@dataclass
-class ModelInfo:
-    """Information about a discovered model."""
-    urn: str            # "ollama/gemma:2b" or "gemini/gemini-flash-latest"
-    provider: str       # "ollama" or "gemini"
-    name: str           # "gemma:2b" or "gemini-flash-latest"
-    type: str           # "llm" or "embedding"
-    size_gb: Optional[float] = None
-    params: Optional[str] = None
+from app.services.ai_providers import AIServiceFactory, ModelInfo
 
 
 # Config file path
@@ -98,89 +88,22 @@ class ModelRegistry:
         """Discover models from all available providers."""
         self._available_models = []
         
-        # Discover Ollama models
-        ollama_models = self._discover_ollama_models(ollama_base_url)
-        self._available_models.extend(ollama_models)
+        # Use Factory to get all configured providers
+        # Note: We can pass keys here if needed, but Factory currently pulls from settings.
         
-        # Discover Gemini models (if API key available)
-        if gemini_api_key:
-            gemini_models = self._discover_gemini_models(gemini_api_key)
-            self._available_models.extend(gemini_models)
+        providers = AIServiceFactory.get_all_services()
+        print(f"Discovery: Found {len(providers)} generic services.")
+
+        for provider in providers:
+            try:
+                models = provider.discover_models()
+                self._available_models.extend(models)
+            except Exception as e:
+                print(f"⚠️ Error discovering models from {provider.provider_name}: {e}")
         
         self._config["last_discovery"] = datetime.now().isoformat()
     
-    def _discover_ollama_models(self, base_url: str) -> List[ModelInfo]:
-        """Discover models from local Ollama instance with robust filtering."""
-        models = []
-        try:
-            import ollama
-            response = ollama.list()
-            
-            for m in response.models:
-                # 1. Check families list (e.g., ['bert', 'nomic-bert'] or ['gemma', 'embedding'])
-                families = [f.lower() for f in (getattr(m.details, 'families', []) or [])]
-                
-                # 2. Robust filter: Check for 'embedding' tag or specific model name keywords
-                is_embedding = 'embedding' in families or 'embed' in m.model.lower()
-                
-                models.append(ModelInfo(
-                    urn=f"ollama/{m.model}",
-                    provider="ollama",
-                    name=m.model,
-                    type="embedding" if is_embedding else "llm",
-                    size_gb=round(m.size / (1024**3), 2),
-                    params=getattr(m.details, 'parameter_size', None)
-                ))
-        except Exception as e:
-            print(f"⚠️ Could not connect to Ollama: {e}")
-        
-        return models
-    
-    def _discover_gemini_models(self, api_key: str) -> List[ModelInfo]:
-        """Discover models from Google Gemini API with specific filtering."""
-        models = []
-        try:
-            from google import genai
-            client = genai.Client(api_key=api_key)
-            
-            # Use query_base=True as per original test script
-            for m in client.models.list(config={'query_base': True}):
-                name_lower = m.name.lower()
-                actions = m.supported_actions or []
-                
-                # Check if it's an embedding model
-                is_embedding = any("embed" in a for a in actions)
-                
-                # FILTER: Keep it if it's an embedding model OR it's a 'latest' alias
-                if is_embedding or "latest" in name_lower:
-                    model_type = None
-                    
-                    # 1. Handle Embedding Models
-                    if is_embedding:
-                        # Filter out experimental/deprecated embeddings/gecko for a clean list
-                        if "exp" not in name_lower and "gecko" not in name_lower:
-                            model_type = "embedding"
-                    
-                    # 2. Handle 'Latest' Generative Models
-                    elif 'generateContent' in actions:
-                        model_type = "llm"
-                    
-                    if model_type:
-                        # Clean model name (remove "models/" prefix)
-                        model_name = m.name.replace("models/", "")
-                        
-                        models.append(ModelInfo(
-                            urn=f"gemini/{model_name}",
-                            provider="gemini",
-                            name=model_name,
-                            type=model_type
-                            # Gemini API doesn't standardly return size/params in this list call easily
-                        ))
-
-        except Exception as e:
-            print(f"⚠️ Could not connect to Gemini API: {e}")
-        
-        return models
+        pass  # Legacy methods removed
     
     # --- Getters ---
     

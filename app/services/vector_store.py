@@ -2,7 +2,8 @@ import chromadb
 import uuid
 from typing import List, Dict, Any, Optional
 from app.core.config import settings
-from app.services.embedding_provider import EmbeddingFactory
+from app.services.model_registry import ModelRegistry
+from app.services.ai_providers import AIServiceFactory, parse_model_urn
 
 class VectorStore:
     _client = None
@@ -21,8 +22,13 @@ class VectorStore:
         Collection Name: docs_{provider_name} (e.g., docs_google, docs_huggingface)
         """
         client = cls.get_client()
-        provider = EmbeddingFactory.get_provider()
-        collection_name = f"docs_{provider.provider_name}"
+        registry = ModelRegistry.instance()
+        urn = registry.get_active_embedding()
+        if not urn:
+            raise ValueError("No embedding model configured. Please set one in Model Settings.")
+        
+        provider_name, _ = parse_model_urn(urn)
+        collection_name = f"docs_{provider_name}"
         
         return client.get_or_create_collection(name=collection_name)
 
@@ -34,12 +40,19 @@ class VectorStore:
         if not texts:
             return
 
-        provider = EmbeddingFactory.get_provider()
+        registry = ModelRegistry.instance()
+        urn = registry.get_active_embedding()
+        if not urn:
+             print("⚠️ No embedding model selected. Skipping ingestion.")
+             return
+
+        provider_name, model_name = parse_model_urn(urn)
+        service = AIServiceFactory.get_service(provider_name)
         collection = cls.get_collection()
 
         # Generate Embeddings
-        print(f"Generating embeddings for {len(texts)} chunks using {provider.provider_name}...")
-        embeddings = provider.embed_batch(texts)
+        print(f"Generating embeddings for {len(texts)} chunks using {provider_name} ({model_name})...")
+        embeddings = service.embed_batch(texts, model_name)
 
         # Prepare Data
         ids = [str(uuid.uuid4()) for _ in range(len(texts))]
@@ -59,10 +72,16 @@ class VectorStore:
         """
         Embeds query and retrieves similar text chunks from active collection.
         """
-        provider = EmbeddingFactory.get_provider()
+        registry = ModelRegistry.instance()
+        urn = registry.get_active_embedding()
+        if not urn:
+             return []
+
+        provider_name, model_name = parse_model_urn(urn)
+        service = AIServiceFactory.get_service(provider_name)
         collection = cls.get_collection()
 
-        query_embedding = provider.embed_text(query)
+        query_embedding = service.embed_text(query, model_name)
 
         results = collection.query(
             query_embeddings=[query_embedding],

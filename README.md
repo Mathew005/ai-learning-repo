@@ -15,9 +15,9 @@ A Python monorepo for learning AI roles and building AI systems. It connects spe
     - [x] In-Memory Conversation History
     - [x] Basic Document Ingestion (TXT)
 
-- [/] **Phase 3: Advanced RAG & LangChain Mastery (Current Focus)**
+- [ ] **Phase 3: Advanced RAG & LangChain Mastery**
     - [x] Multi-Source RAG Q&A System with Citations (PDF Support)
-    - [/] LangChain Mastery (LCEL, Runtime Config)
+    - [ ] LangChain Mastery (LCEL, Runtime Config)
     - [ ] Advanced RAG: Query Transformation (Multi-Query, History Rewriting)
     - [ ] Advanced RAG: Re-ranking (Cross-Encoders)
     - [ ] Memory Management (Persistent Sessions)

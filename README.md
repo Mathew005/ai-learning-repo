@@ -4,30 +4,38 @@ A Python monorepo for learning AI roles and building AI systems. It connects spe
 
 ## Roadmap & Progress
 
-- [x] **1. Fundamentals**
+- [x] **Phase 1: Fundamentals (LLM & APIs)**
     - [x] LLM Fundamentals
     - [x] Prompt Engineering (Zero-shot to Chain-of-Thought)
-    - [x] LLM APIs Integration (OpenAI, Claude, Gemini)
+    - [x] LLM APIs Integration (OpenAI, Claude, Gemini, Ollama)
 
-- [ ] **2. RAG Systems**
-    - [x] Vector Databases (Pinecone, Weaviate, Chroma)
+- [x] **Phase 2: RAG Systems (Basic)**
+    - [x] Vector Databases (ChromaDB)
     - [x] Embeddings & Semantic Search
-    - [ ] LangChain Mastery & Memory Management
-    - [ ] Advanced RAG (Query Transformation, Reranking)
+    - [x] In-Memory Conversation History
+    - [x] Basic Document Ingestion (TXT)
 
-- [ ] **3. Milestone Project**
-    - [ ] Multi-Source RAG Q&A System with Citations
+- [/] **Phase 3: Advanced RAG & LangChain Mastery (Current Focus)**
+    - [x] Multi-Source RAG Q&A System with Citations (PDF Support)
+    - [/] LangChain Mastery (LCEL, Runtime Config)
+    - [ ] Advanced RAG: Query Transformation (Multi-Query, History Rewriting)
+    - [ ] Advanced RAG: Re-ranking (Cross-Encoders)
+    - [ ] Memory Management (Persistent Sessions)
 
-- [ ] **4. AI Agents**
-    - [ ] ReAct Pattern
-    - [ ] LangGraph
+- [ ] **Phase 4: AI Agents**
+    - [ ] ReAct Pattern (Reasoning + Acting)
+    - [ ] LangGraph Implementation
     - [ ] Tool Calling & Function Execution
 
-- [ ] **5. Advanced & Production**
-    - [ ] Multi-agent Systems (CrewAI, AutoGen)
-    - [ ] Multi-modal AI
-    - [ ] Evaluation (RAGAS, TruLens)
-    - [ ] Security & Cost Optimization
+- [ ] **Phase 5: Multi-Agent Systems & Production**
+    - [ ] Multi-agent Orchestration (CrewAI / AutoGen / Hierarchical Teams)
+    - [ ] Multi-modal AI (Vision, Audio)
+    - [ ] Production Deployment & Integration
+
+- [ ] **Phase 6: Optimization & Evaluation**
+    - [ ] Evaluation Frameworks (RAGAS, TruLens)
+    - [ ] Security (Prompt Injection Defense)
+    - [ ] Cost Optimization Strategies
 
 ## Tech Stack
 

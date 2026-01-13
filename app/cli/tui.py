@@ -140,6 +140,10 @@ async def basic_rag_menu():
         
         elif choice == "Chat with Documents":
             console.print(f"[bold green]Entering Basic RAG Chat (Using {slot_name}). Type 'exit' to quit.[/bold green]")
+            
+            # --- History Context ---
+            chat_history = []
+            
             while True:
                 q = await questionary.text("Query:").ask_async()
                 if q.lower() in ["exit", "quit"]:
@@ -149,8 +153,13 @@ async def basic_rag_menu():
                 
                 with console.status(f"[bold blue]Retrieving & Thinking ({slot_name})..."):
                     try:
-                        response = await RAGEngine.generate_rag_response(q, model_slot=RAG_MODEL_SLOT)
+                        response = await RAGEngine.generate_rag_response(q, model_slot=RAG_MODEL_SLOT, history=chat_history)
                         console.print(Panel(response.content, title=f"RAG Answer ({response.model_name})", border_style="green"))
+                        
+                        # Update History
+                        chat_history.append({"role": "user", "content": q})
+                        chat_history.append({"role": "model", "content": response.content})
+                        
                     except Exception as e:
                         console.print(f"[red]Error: {e}[/red]")
 

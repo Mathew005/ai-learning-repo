@@ -9,6 +9,7 @@ class PromptRequest(BaseModel):
     user_query: str
     temperature: float = 0.7
     model_slot: int = 1  # Default to Model 1
+    history: Optional[List[Dict[str, str]]] = None  # Conversation history [{"role": "user"|"model", "content": "..."}]
 
 # Basic Output
 class AIResponse(BaseModel):

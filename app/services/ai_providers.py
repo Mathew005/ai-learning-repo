@@ -117,9 +117,19 @@ class GeminiService(AIProvider):
                 max_output_tokens=2048,
                 system_instruction=request.system_role
             )
+            # Prepare contents with history if available
+            contents = []
+            if request.history:
+                for msg in request.history:
+                    role = "model" if msg["role"] in ["model", "assistant"] else "user"
+                    contents.append(genai_types.Content(role=role, parts=[genai_types.Part.from_text(text=msg["content"])]))
+            
+            # Add current query
+            contents.append(genai_types.Content(role="user", parts=[genai_types.Part.from_text(text=request.user_query)]))
+
             response = self.client.models.generate_content(
                 model=model_name,
-                contents=request.user_query,
+                contents=contents,
                 config=config
             )
             tokens_used = response.usage_metadata.total_token_count if response.usage_metadata else 0
@@ -184,13 +194,23 @@ class OllamaService(AIProvider):
         url = f"{self.base_url}/api/chat"
         payload = {
             "model": model_name,
+            "model": model_name,
             "messages": [
                 {"role": "system", "content": request.system_role},
-                {"role": "user", "content": request.user_query}
             ],
             "stream": False,
             "options": {"temperature": request.temperature}
         }
+        
+        # Add history if available
+        if request.history:
+            for msg in request.history:
+                # Ollama uses 'assistant' for model responses
+                role = "assistant" if msg["role"] in ["model", "assistant"] else "user"
+                payload["messages"].append({"role": role, "content": msg["content"]})
+        
+        # Add current user query
+        payload["messages"].append({"role": "user", "content": request.user_query})
         try:
             async with httpx.AsyncClient() as client:
                 resp = await client.post(url, json=payload, timeout=60.0)

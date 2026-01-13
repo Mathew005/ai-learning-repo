@@ -61,7 +61,7 @@ class RAGEngine:
         return results
 
     @staticmethod
-    async def generate_rag_response(user_query: str, model_slot: int = 1) -> AIResponse:
+    async def generate_rag_response(user_query: str, model_slot: int = 1, history: List[Dict[str, str]] = None) -> AIResponse:
         """
         Performs Retrieval Augmented Generation.
         1. Retrieve context
@@ -103,7 +103,8 @@ Answer:
             # Ideally user_query is just the Q, but here we inject context.
             # Let's override user_query.
             system_role="You are a RAG assistant. Use the provided context.",
-            temperature=0.3 # Lower temp for factual answers
+            temperature=0.3, # Lower temp for factual answers
+            history=history
         )
         
         return await prompt_engine.call_specific_model_by_slot(model_slot, request)

@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# CoCo & Database Data
+my_coco_data/
+*.log
+*.sqlite
+
+# IDEs
+.vscode/
+.idea/
+
+# Testing & Typing
+.pytest_cache/
+.mypy_cache/
+.coverage
+
+# Environment Variables
+.env
+.env.local
+
+# Databases
+chroma_db/
+my_coco_data/
+
+# OS
+.DS_Store
+Thumbs.db

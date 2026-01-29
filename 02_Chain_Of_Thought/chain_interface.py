@@ -7,87 +7,86 @@ def render():
     st.header("Phase 2: Chain of Thought")
     st.caption("Sequential reasoning with a dynamic chain of models.")
 
-    # --- Session State for Dynamic Steps ---
-    if "ph2_num_steps" not in st.session_state:
-        st.session_state.ph2_num_steps = 2
-
     # --- Sidebar: Chain Configuration ---
     with st.sidebar:
         st.subheader("Chain Topology")
         
-        # Step Management
-        col_add, col_rem = st.columns(2)
-        if col_add.button("➕ Add Step"):
-            st.session_state.ph2_num_steps += 1
+        # Topology Control: Number Input
+        # We bind this directly to a key in session state, but we need to initialize it first if not present
+        if "ph2_num_steps" not in st.session_state:
+            st.session_state.ph2_num_steps = 2
+            
+        num_steps = st.number_input(
+            "Number of Steps", 
+            min_value=2, 
+            max_value=10, 
+            value=st.session_state.ph2_num_steps,
+            step=1,
+            key="_ph2_num_steps_input"
+        )
         
-        if col_rem.button("➖ Remove Step"):
-            if st.session_state.ph2_num_steps > 2:
-                st.session_state.ph2_num_steps -= 1
-            else:
-                st.toast("Minimum 2 steps required.", icon="⚠️")
+        # Sync the input with our persistent state variable if it changes
+        if num_steps != st.session_state.ph2_num_steps:
+             st.session_state.ph2_num_steps = num_steps
+             st.rerun()
 
         st.divider()
         
-        # Model Selection for Each Step
+        # Model Selection with Expanders
         slots = LLMEngine.get_model_slots()
         slot_options = list(slots.keys())
-        
         selected_models = []
         
         for i in range(st.session_state.ph2_num_steps):
-            st.markdown(f"**Step {i+1} Model**")
-            # Default indices: Flip flop between 0 and 1 for variety if available
+            step_num = i + 1
             default_idx = 0 if i % 2 == 0 else (1 if len(slot_options) > 1 else 0)
             
+            # Flat structure
+            st.markdown(f"**Step {step_num} Model**")
             slot_name = st.selectbox(
-                f"Select Model for Step {i+1}", 
+                f"Select Model", 
                 slot_options, 
                 key=f"ph2_slot_{i}", 
                 index=default_idx,
                 label_visibility="collapsed"
             )
             model_ref = slots[slot_name]
-            selected_models.append((slot_name, model_ref))
             st.caption(f"Using: `{model_ref}`")
+            selected_models.append((slot_name, model_ref))
             st.divider()
 
+        st.divider()
         temperature = st.slider("Temperature", 0.0, 1.0, 0.7, key="ph2_temp")
         
         if st.button("Clear Chain", key="ph2_clear"):
             st.session_state.ph2_messages = []
             st.rerun()
 
-    # --- Main Area: System Prompts with Status Placeholders ---
+    # --- Main Area: System Prompts ---
     
-    # We need to capture the placeholders to update them during execution
     status_placeholders = []
-    system_prompts = []
-    
-    # Render System Prompt Inputs
-    # We'll use a loop. To make it look nice, maybe columns if few, or vertical list.
-    # Vertical list is safer for N steps.
     
     for i in range(st.session_state.ph2_num_steps):
-        # Header with Placeholder for "Active" status
-        col_head, col_status = st.columns([0.8, 0.2])
-        with col_head:
-            st.subheader(f"Step {i+1}: System Prompt")
-        with col_status:
-            # This empty container will be populated during execution
-            ph = st.empty()
-            status_placeholders.append(ph)
-            
-        # Default prompt logic
-        default_prompt = "You are a helpful assistant. Think step-by-step." if i < st.session_state.ph2_num_steps - 1 else "You are a helpful assistant. Synthesize the final answer."
+        step_num = i + 1
         
-        sys_p = st.text_area(
-            "Prompt Content", 
-            value=default_prompt, 
-            height=100, 
-            key=f"ph2_sys_{i}",
-            label_visibility="collapsed"
+        # 1. Status Banner Placeholder (e.g. "Running...")
+        # We put this ABOVE the system prompt
+        ph = st.empty()
+        status_placeholders.append(ph)
+        
+        # 2. System Prompt Input (Static)
+        label = f"Step {step_num}: System Prompt"
+        key = f"ph2_sys_{i}"
+        
+        # Default Logic
+        default_val = "You are a helpful assistant. Think step-by-step." if i < st.session_state.ph2_num_steps - 1 else "You are a helpful assistant. Synthesize the final answer."
+        
+        st.text_area(
+            label,
+            value=st.session_state.get(key, default_val),
+            height=100,
+            key=key
         )
-        system_prompts.append(sys_p)
 
     st.divider()
 
@@ -104,12 +103,10 @@ def render():
             with st.chat_message("user"):
                 st.markdown(content)
         elif role.startswith("assistant_step"):
-            # Intermediate steps
-            step_num = role.split("_")[-1] # extraction might be 'step1', 'step2' etc
+            step_num = role.split("_")[-1]
             with st.expander(f"Chain Step {step_num}", expanded=False):
                 st.markdown(content)
         elif role == "assistant":
-            # Final step
             with st.chat_message("assistant"):
                 st.markdown(content)
 
@@ -124,76 +121,69 @@ def render():
         current_input_context = prompt
         accumulated_chain = "" 
         
-        # Container for execution updates
-        with st.chat_message("assistant"):
-            overall_status = st.status("Initializing Chain...", expanded=True)
-            
-            try:
-                for i in range(st.session_state.ph2_num_steps):
-                    step_id = i + 1
-                    model_display_name, model_id = selected_models[i]
-                    sys_prompt = system_prompts[i]
-                    
-                    # A. Highlight the System Prompt in UI
-                    status_placeholders[i].info("Wait... ⏳") # Indicate pending?
-                    status_placeholders[i].warning(f"**Running {model_display_name}...** 🏃‍♂️")
-                    
-                    overall_status.write(f"**Step {step_id}**: Using {model_display_name}...")
-                    
-                    # B. Prepare Messages
-                    # Context strategy: 
-                    # Step 1: System + User Prompt
-                    # Step N: System + (User Prompt + Previous Chain)
-                    
-                    full_context_msg = ""
-                    if i == 0:
-                        full_context_msg = current_input_context
-                    else:
-                        full_context_msg = f"Original Query: {prompt}\n\nPrevious Reasoning/Context:\n{accumulated_chain}"
-                    
-                    msgs = [
-                        {"role": "system", "content": sys_prompt}, 
-                        {"role": "user", "content": full_context_msg}
-                    ]
-                    
-                    # C. Run Inference
-                    response_text = LLMEngine.chat(model_id, msgs, temperature)
-                    if not response_text:
-                        response_text = "No response generated."
+        try:
+            for i in range(st.session_state.ph2_num_steps):
+                step_id = i + 1
+                model_display_name, model_id = selected_models[i]
+                sys_prompt = st.session_state.get(f"ph2_sys_{i}", "")
+                
+                # --- START MARKER ---
+                status_placeholders[i].warning(f"▶️ Running Step {step_id} with {model_display_name}...", icon="⏳")
+                
+                # Prepare Messages
+                full_context_msg = ""
+                if i == 0:
+                    full_context_msg = current_input_context
+                else:
+                    full_context_msg = f"Original Query: {prompt}\n\nPrevious Reasoning/Context:\n{accumulated_chain}"
+                
+                msgs = [
+                    {"role": "system", "content": sys_prompt}, 
+                    {"role": "user", "content": full_context_msg}
+                ]
+                
+                # Run Inference
+                response_text = LLMEngine.chat(model_id, msgs, temperature)
+                
+                if not response_text or "Error" in response_text:
+                     raise Exception(f"Model {model_display_name} returned error/empty: {response_text}")
 
-                    # D. Update UI & History
-                    accumulated_chain += f"\n--- Step {step_id} Output ---\n{response_text}\n"
-                    
-                    # Store intermediate steps as 'assistant_step{i}'
-                    # Identify if this is the FINAL step
-                    is_final = (i == st.session_state.ph2_num_steps - 1)
-                    
-                    if not is_final:
-                         st.session_state.ph2_messages.append({
-                             "role": f"assistant_step{step_id}", 
-                             "content": response_text
-                         })
-                         overall_status.write(f"Step {step_id} Complete. ✅")
-                         with st.expander(f"Step {step_id} Result"):
-                             st.markdown(response_text)
-                    else:
-                        # Final Result
-                        overall_status.update(label="Chain Complete!", state="complete", expanded=False)
-                        st.session_state.ph2_messages.append({
-                            "role": "assistant",
-                            "content": response_text
-                        })
+                # --- END MARKER ---
+                status_placeholders[i].success(f"Step {step_id} Complete", icon="✅")
+                
+                accumulated_chain += f"\n--- Step {step_id} Output ---\n{response_text}\n"
+                
+                is_final = (i == st.session_state.ph2_num_steps - 1)
+                
+                if not is_final:
+                    st.session_state.ph2_messages.append({
+                        "role": f"assistant_step{step_id}", 
+                        "content": response_text
+                    })
+                    with st.expander(f"Step {step_id} Result", expanded=True):
                         st.markdown(response_text)
+                else:
+                    status_placeholders[i].empty() # Clear final checkmark for aesthetics? Or keep it. Let's keep it brief then clear.
+                    time.sleep(0.5) 
+                    status_placeholders[i].empty() 
                     
-                    # E. Clear Highlight
-                    status_placeholders[i].empty() # Remove highlight
-                    status_placeholders[i].success(f"Done ✅")
-                    time.sleep(0.5) # Brief pause to see the success state
+                    st.session_state.ph2_messages.append({
+                        "role": "assistant",
+                        "content": response_text
+                    })
+                    with st.chat_message("assistant"):
+                        st.markdown(response_text)
+                        
+                # Brief pause
+                time.sleep(0.2)
+                # Cleanup the 'running' banner to 'Done' or clear
+                if not is_final:
+                     time.sleep(1.0)
+                     status_placeholders[i].empty() 
 
-            except Exception as e:
-                overall_status.update(label="Chain Error", state="error")
-                st.error(f"Error at Step {step_id}: {e}")
-                traceback.print_exc()
-                # Clear active highlights on error
-                for ph in status_placeholders:
-                    ph.empty()
+        except Exception as e:
+            # --- ERROR HANDLING ---
+            status_placeholders[i].error(f"Failed: {e}", icon="❌")
+            st.error(f"🛑 Execution Halted at Step {step_id}")
+            traceback.print_exc()
+            return # HALT

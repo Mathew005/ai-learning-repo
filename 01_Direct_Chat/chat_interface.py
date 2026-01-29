@@ -2,7 +2,7 @@ import streamlit as st
 from shared.llm import LLMEngine
 
 def render():
-    st.header("Phase 1: Chat Interface")
+    st.header("Phase 1: Direct Chat")
     st.caption("Demonstrating Basic LLM Chat")
 
     # --- Sidebar for this module ---

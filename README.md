@@ -5,7 +5,7 @@ Each folder represents a distinct phase of learning.
 
 ## Structure
 
-*   `01_Fundamentals`: LLM APIs, Prompt Engineering.
+*   `01_Direct_Chat`: LLM APIs, Prompt Engineering.
 *   `02_Basic_RAG`: Retrieval Augmented Generation basics.
 *   `03_Advanced_RAG`: Advanced RAG techniques (LangChain, Graph).
 *   `04_Agents`: AI Agents (ReAct, Tool use).

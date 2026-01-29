@@ -22,10 +22,10 @@ def home_page():
     *   **Configuration**: Centralized `.env`.
     """)
 
-def fundamentals_page():
+def direct_chat_page():
     try:
         # Dynamic import to handle the module
-        chat_interface = importlib.import_module("01_Fundamentals.chat_interface")
+        chat_interface = importlib.import_module("01_Direct_Chat.chat_interface")
         chat_interface.render()
     except ImportError as e:
         st.error(f"Failed to load Phase 1: {e}")
@@ -48,7 +48,7 @@ pg = st.navigation({
         st.Page(home_page, title="Home", icon="🏠"),
     ],
     "Learning Phases": [
-        st.Page(fundamentals_page, title="01. Direct Chat", icon="💬"),
+        st.Page(direct_chat_page, title="01. Direct Chat", icon="💬"),
         st.Page(chain_of_thought_page, title="02. Chain of Thought", icon="🔗"),
         st.Page(basic_rag_page, title="03. Basic RAG", icon="📚"),
     ]

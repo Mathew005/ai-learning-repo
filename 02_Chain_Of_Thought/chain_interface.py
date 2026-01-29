@@ -55,7 +55,6 @@ def render():
             selected_models.append((slot_name, model_ref))
             st.divider()
 
-        st.divider()
         temperature = st.slider("Temperature", 0.0, 1.0, 0.7, key="ph2_temp")
         
         if st.button("Clear Chain", key="ph2_clear"):

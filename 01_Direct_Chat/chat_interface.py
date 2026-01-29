@@ -17,6 +17,9 @@ def render():
         selected_model = slots[selected_slot_name]
         
         st.caption(f"Using: `{selected_model}`")
+        
+        system_prompt = st.text_area("System Prompt", value="", placeholder="Optional system instruction...", key="ph1_system_prompt")
+        
         temperature = st.slider("Temperature", 0.0, 1.0, 0.7, key="ph1_temp")
         
         if st.button("Clear Chat", key="ph1_clear"):
@@ -42,6 +45,10 @@ def render():
             with st.spinner("Thinking..."):
                 # Prepare messages
                 messages_for_llm = [{"role": m["role"], "content": m["content"]} for m in st.session_state.ph1_messages]
+                
+                # Add System Prompt if provided
+                if system_prompt:
+                    messages_for_llm.insert(0, {"role": "system", "content": system_prompt})
                 
                 try:
                     response = LLMEngine.chat(selected_model, messages_for_llm, temperature)

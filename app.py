@@ -30,9 +30,16 @@ def fundamentals_page():
     except ImportError as e:
         st.error(f"Failed to load Phase 1: {e}")
 
+def chain_of_thought_page():
+    try:
+        chain_interface = importlib.import_module("02_Chain_Of_Thought.chain_interface")
+        chain_interface.render()
+    except ImportError as e:
+        st.error(f"Failed to load Phase 2: {e}")
+
 def basic_rag_page():
-    st.title("02. Basic RAG")
-    st.info("Phase 2 Placeholder. Implementation coming soon.")
+    st.title("03. Basic RAG")
+    st.info("Phase 3 Placeholder. Implementation coming soon.")
 
 # --- Navigation Setup ---
 
@@ -41,8 +48,9 @@ pg = st.navigation({
         st.Page(home_page, title="Home", icon="🏠"),
     ],
     "Learning Phases": [
-        st.Page(fundamentals_page, title="01. Fundamentals", icon="💬"),
-        st.Page(basic_rag_page, title="02. Basic RAG", icon="📚"),
+        st.Page(fundamentals_page, title="01. Direct Chat", icon="💬"),
+        st.Page(chain_of_thought_page, title="02. Chain of Thought", icon="🔗"),
+        st.Page(basic_rag_page, title="03. Basic RAG", icon="📚"),
     ]
 })
 

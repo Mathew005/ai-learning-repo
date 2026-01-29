@@ -7,8 +7,8 @@ class Settings(BaseSettings):
 
     # Model Slots - 'Loadouts' for the application
     MODEL_1: str = "gemini/gemini-flash-latest"
-    MODEL_2: str = "ollama/gemma:2b"
-    MODEL_3: str = "ollama/gemma3n"
+    MODEL_2: str = "ollama/i82blikeu/gemma-3n-E4B-it-GGUF:Q3_K_M"
+    MODEL_3: str = "ollama/adelnazmy2002/Qwen3-VL-8B-Instruct"
 
     # Embedding Slots
     EMBED_1: str = "gemini/text-embedding-004"
